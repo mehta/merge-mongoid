@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.files         = `git ls-files`.split("\n")
   s.require_paths = ["lib"]
 
-  s.add_development_dependency 'rspec', '~> 2.14.1' 
+  s.add_development_dependency 'rspec', '> 2.14.1' 
   s.add_development_dependency 'rails', '>= 3.2.0'
   s.add_development_dependency 'factory_girl_rails', '~> 3.6.0'
   s.add_runtime_dependency 'mongoid', ">= 3.1.6"

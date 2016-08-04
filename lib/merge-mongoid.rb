@@ -3,7 +3,7 @@ require 'mongoid'
 module Mongoid
   module Document
     module Mergeable
-      
+
       # Merge a mongoid document into another.
       # A.merge!(B)
       def merge!(another_document, arr_of_hash_uniq = {})
@@ -13,9 +13,9 @@ module Mongoid
           raise "Cannot merge two different models."
         elsif (!self.is_a? Mongoid::Document) || (!another_document.is_a? Mongoid::Document)
           raise "Can only merge mongoid documents."
-        else 
+        else
           # let's merge these documents
-          
+
           # A.merge!(B)
           #
           # We iterate on B attributes :
@@ -26,18 +26,37 @@ module Mongoid
                 self.changed_attributes[key] = nil
             elsif self[key].is_a? Hash
                 self.changed_attributes[key] = nil
-            end 
+            end
           end
-          
+
+          another_document.relations.each do |key, value|
+            case value.relation.to_s
+            when "Mongoid::Relations::Referenced::Many", "Mongoid::Relations::Embedded::Many"
+              merge_relations(self, another_document, key)
+            else
+              # TODO: process another types of associations
+              puts "unknown relation type: #{value.relation}"
+            end
+          end
+
           # saving the A model
           self.save
           # delete the B model
-          another_document.destroy 
+          another_document.destroy
         end
       end
-      
+
       private
-      
+
+      def merge_relations(first, second, key)
+        already_presented = first.send(key)
+        associated_records = second.send(key)
+        associated_records.each do |record|
+          first.send(key).push(record) unless already_presented.include? record
+        end
+        first.save!
+      end
+
       def merge_attributes(a, b, hash_uniq_attr = {})
         # we might want to remove this test, and for instance merge the different types in an Array
         if ((a.class != NilClass) && (b.class != NilClass) && (a.class != b.class)) && !(((a.class == TrueClass) && (b.class == FalseClass)) || ((a.class == FalseClass) && (b.class == TrueClass)))
@@ -62,11 +81,11 @@ module Mongoid
               a = b
             end
           end
-          
-          return a 
+
+          return a
         end
       end
-      
+
       def dedupe(array, hash_uniq_attr = 'id')
         result = []
         ids = [] #where we store the uniqueness identifier
@@ -75,14 +94,14 @@ module Mongoid
             if !ids.include? value[hash_uniq_attr]
               ids << value[hash_uniq_attr]
               result << value
-            end  
+            end
           else
             if !result.include? value
               result << value
             end
           end
         end
-        
+
         result
       end
     end
